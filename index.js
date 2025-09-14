@@ -1,18 +1,35 @@
-require("dotenv").config(); // ✅ .env import
-const mongoose = require("mongoose");
-const Todo = require("./models/Todo"); // relative path तपास
+// Load environment variables
+require("dotenv").config();
 
 const express = require("express");
-const app = express();
+const mongoose = require("mongoose");
 const cors = require("cors");
+const Todo = require("./models/Todo"); // ✅ make sure models/Todo.js exists
 
+const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// ✅ Get all todos from MongoDB
+// ✅ MongoDB connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+
+// ✅ Simple test route
+app.get("/", (req, res) => {
+  res.send("Backend is running and connected to MongoDB 🚀");
+});
+
+// ✅ Get all todos
 app.get("/todos", async (req, res) => {
   try {
-    const todos = await Todo.find(); // MongoDB मधून सर्व todos मिळवा
+    const todos = await Todo.find();
     res.json(todos);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -25,8 +42,8 @@ app.post("/todos", async (req, res) => {
   if (!title) return res.status(400).json({ error: "Title is required" });
 
   try {
-    const newTodo = new Todo({ title }); // completed default false
-    const savedTodo = await newTodo.save(); // MongoDB मध्ये save करा
+    const newTodo = new Todo({ title });
+    const savedTodo = await newTodo.save();
     res.status(201).json(savedTodo);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -38,7 +55,6 @@ app.put("/todos/:id", async (req, res) => {
   const { id } = req.params;
   const { title, completed } = req.body;
 
-  // 👉 Validate ObjectId (fix for "Cast to ObjectId failed" error)
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ error: "Invalid todo ID" });
   }
@@ -46,7 +62,12 @@ app.put("/todos/:id", async (req, res) => {
   try {
     const updatedTodo = await Todo.findByIdAndUpdate(
       id,
-      { $set: { ...(title && { title }), ...(completed !== undefined && { completed }) } },
+      {
+        $set: {
+          ...(title && { title }),
+          ...(completed !== undefined && { completed }),
+        },
+      },
       { new: true, runValidators: true }
     );
 
@@ -62,7 +83,6 @@ app.put("/todos/:id", async (req, res) => {
 app.delete("/todos/:id", async (req, res) => {
   const { id } = req.params;
 
-  // 👉 Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ error: "Invalid todo ID" });
   }
@@ -77,18 +97,8 @@ app.delete("/todos/:id", async (req, res) => {
   }
 });
 
-// ✅ Port from .env (fallback 3001)
+// ✅ Server start
 const PORT = process.env.PORT || 3001;
-
-// ✅ Debug: print env to check
-console.log("👉 MONGO_URI from .env:", process.env.MONGO_URI);
-
-// ✅ Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
-
-app.listen(PORT, () =>
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});

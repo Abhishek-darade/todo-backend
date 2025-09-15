@@ -23,7 +23,7 @@ mongoose
 
 // ✅ Simple test route
 app.get("/", (req, res) => {
-  res.send("Backend is running and connected to MongoDB 🚀");
+  res.send("Backend is now running  and also connected to MongoDB 🚀");
 });
 
 // ✅ Get all todos

@@ -4,6 +4,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path"); // 🔥 added for frontend serve
 const Todo = require("./models/Todo"); // ✅ make sure models/Todo.js exists
 
 const app = express();
@@ -14,19 +15,13 @@ app.use(express.json());
 
 // ✅ MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ Simple test route
-app.get("/", (req, res) => {
-  res.send("Backend is now running  and also connected to MongoDB 🚀");
-});
+// ✅ API Routes
 
-// ✅ Get all todos
+// Get all todos
 app.get("/todos", async (req, res) => {
   try {
     const todos = await Todo.find();
@@ -36,7 +31,7 @@ app.get("/todos", async (req, res) => {
   }
 });
 
-// ✅ Create a new todo
+// Create a new todo
 app.post("/todos", async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ error: "Title is required" });
@@ -50,7 +45,7 @@ app.post("/todos", async (req, res) => {
   }
 });
 
-// ✅ Update a todo
+// Update a todo
 app.put("/todos/:id", async (req, res) => {
   const { id } = req.params;
   const { title, completed } = req.body;
@@ -79,7 +74,7 @@ app.put("/todos/:id", async (req, res) => {
   }
 });
 
-// ✅ Delete a todo
+// Delete a todo
 app.delete("/todos/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -95,6 +90,13 @@ app.delete("/todos/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ✅ Serve Frontend (React build)
+app.use(express.static(path.join(__dirname, "build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
 // ✅ Server start
